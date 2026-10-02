@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Check</title>
+  <style>
+    :root {
+      --ink: #1c2430;
+      --muted: #667085;
+      --good: #157a42;
+      --bad: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #f7f4ee;
+    }
+
+    main {
+      width: min(720px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 36px 0 72px;
+    }
+
+    .count {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0 0 28px;
+      font-size: clamp(1.85rem, 4.5vw, 2.6rem);
+      line-height: 1.2;
+      font-weight: 700;
+    }
+
+    h1.score {
+      margin: 0;
+      font-size: clamp(4.5rem, 14vw, 7.5rem);
+      line-height: 1;
+    }
+
+    .choices { display: grid; gap: 4px; }
+
+    button.choice {
+      display: grid;
+      grid-template-columns: 1.5em 2em 1fr;
+      gap: 8px;
+      align-items: baseline;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      font-size: clamp(1.35rem, 3vw, 1.7rem);
+      line-height: 1.35;
+      padding: 12px 4px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    button.choice:hover { background: rgba(255, 255, 255, 0.55); }
+
+    button.choice:focus-visible {
+      outline: 3px solid #1f4e46;
+      outline-offset: 2px;
+    }
+
+    .letter { font-weight: 700; }
+
+    button.choice.right { color: var(--good); }
+    button.choice.wrong { color: var(--bad); }
+    button.choice:disabled { cursor: default; }
+    button.choice:disabled:hover { background: transparent; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="count" id="count"></p>
+    <h1 id="question"></h1>
+    <div class="choices" id="choices"></div>
+  </main>
+  <script>
+    const letters = ["A.", "B.", "C.", "D."];
+    const questions = [
+      {
+        q: "What does the school vision say LA wants to give future leaders?",
+        choices: [
+          ["🎓", "Quality education, a school to look up to"],
+          ["⏱️", "A shorter school day for every class"],
+          ["🏅", "Sports training as the school's main goal"],
+          ["💻", "Online lessons in place of the classroom"]
+        ],
+        answer: 0
+      },
+      {
+        q: "The mission says Christian education helps students act with what?",
+        choices: [
+          ["🏃", "Speed and silence in daily school life"],
+          ["🤝", "Integrity and honesty in how they act"],
+          ["📝", "Perfect test scores above everything"],
+          ["🏆", "Winning every contest above all else"]
+        ],
+        answer: 1
+      },
+      {
+        q: "Students should know Chinese culture, think internationally, and build what?",
+        choices: [
+          ["📅", "One exam week as the yearly target"],
+          ["🥇", "Club medals as the main school aim"],
+          ["📚", "Abilities made for lifelong learning"],
+          ["🔒", "Staying inside only one school subject"]
+        ],
+        answer: 2
+      },
+      {
+        q: "What is the school motto?",
+        choices: [
+          ["💡", "Knowledge is power for every student"],
+          ["💛", "Love bears all things, believes all things"],
+          ["🛠️", "Work comes first, and rest comes after"],
+          ["⚡", "Be the fastest person in the classroom"]
+        ],
+        answer: 1
+      },
+      {
+        q: "Where does the motto come from?",
+        choices: [
+          ["📖", "Psalm 23"],
+          ["✝️", "John 3:16"],
+          ["🌍", "Genesis 1:1"],
+          ["✉️", "1 Corinthians 13:7"]
+        ],
+        answer: 3
+      },
+      {
+        q: "What time are the morning worship, reading, and homeroom slots?",
+        choices: [
+          ["🕗", "08:50–08:55 in the morning"],
+          ["🕖", "07:30–08:00 before first lesson"],
+          ["🕛", "12:00 noon, the middle of the day"],
+          ["🌇", "After school, once the lessons end"]
+        ],
+        answer: 0
+      },
+      {
+        q: "What is Monday at 08:50–08:55?",
+        choices: [
+          ["📚", "Drop Everything And Read"],
+          ["📋", "Homeroom tasks for the class"],
+          ["🙏", "Whole-school Worship together"],
+          ["🚩", "Flag-raising for the whole school"]
+        ],
+        answer: 2
+      },
+      {
+        q: "Why are the seats arranged as islands?",
+        choices: [
+          ["🔇", "To help each student work quietly alone"],
+          ["👥", "To help students engage in group discussion"],
+          ["👀", "To help the teacher watch every screen"],
+          ["🚪", "To help the class leave the room faster"]
+        ],
+        answer: 1
+      },
+      {
+        q: "Students respect and support one another, learn together, take responsibility as future leaders, and keep learning for life. Which habit fits?",
+        choices: [
+          ["📱", "Check Google Calendar weekly and keep phones on the desk"],
+          ["🎮", "Skip Google Calendar and use phones for games in class"],
+          ["📅", "Check Google Calendar daily and lock phones away on arrival"],
+          ["📆", "Check Google Calendar on Friday and leave phones in bags"]
+        ],
+        answer: 2
+      },
+      {
+        q: "Which set is in the homeroom essential agreements?",
+        choices: [
+          ["🎮", "Speak fast, gaming is fine, ignore others, playfight, skip help"],
+          ["🏃", "Line up fast, stay silent, skip respect, race others, help no one"],
+          ["📱", "Phones stay out, game in class, talk over others, playfight, no help"],
+          ["🤝", "Think first, no gaming, respect others, no playfighting, offer help"]
+        ],
+        answer: 3
+      }
+    ];
+
+    const countEl = document.getElementById("count");
+    const questionEl = document.getElementById("question");
+    const choicesEl = document.getElementById("choices");
+    let index = 0;
+    let attempts = 0;
+    let showingScore = false;
+    const solved = questions.map(() => false);
+    const missed = questions.map(() => []);
+
+    function showScore() {
+      showingScore = true;
+      const accuracy = Math.round(questions.length / attempts * 100);
+      countEl.textContent = questions.length + " / " + attempts;
+      questionEl.className = "score";
+      questionEl.textContent = accuracy + "%";
+      choicesEl.innerHTML = "";
+    }
+
+    function showQuestion() {
+      showingScore = false;
+      const item = questions[index];
+      const done = solved[index];
+      const misses = missed[index];
+      questionEl.className = "";
+      countEl.textContent = (index + 1) + " / " + questions.length;
+      questionEl.textContent = item.q;
+      choicesEl.innerHTML = "";
+
+      item.choices.forEach(([emoji, text], choiceIndex) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice";
+
+        const icon = document.createElement("span");
+        icon.textContent = emoji;
+        const letter = document.createElement("span");
+        letter.className = "letter";
+        letter.textContent = letters[choiceIndex];
+        const label = document.createElement("span");
+        label.textContent = text;
+        button.append(icon, letter, label);
+
+        const wasWrong = misses.includes(choiceIndex);
+        if (done || wasWrong) button.disabled = true;
+        if (done && choiceIndex === item.answer) button.classList.add("right");
+        if (wasWrong) button.classList.add("wrong");
+
+        button.addEventListener("click", () => {
+          if (solved[index] || missed[index].includes(choiceIndex)) return;
+          attempts += 1;
+          if (choiceIndex === item.answer) solved[index] = true;
+          else missed[index].push(choiceIndex);
+          showQuestion();
+        });
+        choicesEl.appendChild(button);
+      });
+    }
+
+    function move(step) {
+      if (showingScore) {
+        if (step < 0) {
+          index = questions.length - 1;
+          showQuestion();
+        }
+        return;
+      }
+      const next = index + step;
+      if (next < 0) return;
+      if (next >= questions.length) {
+        if (attempts > 0) showScore();
+        return;
+      }
+      index = next;
+      showQuestion();
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        move(1);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        move(-1);
+      }
+    });
+
+    showQuestion();
+  </script>
+</body>
+</html>
