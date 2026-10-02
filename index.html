@@ -81,6 +81,53 @@
     button.choice.wrong { color: var(--bad); }
     button.choice:disabled { cursor: default; }
     button.choice:disabled:hover { background: transparent; }
+
+    #fx {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    .popup {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      align-items: end;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(28, 36, 48, 0.28);
+    }
+
+    .popup[hidden] { display: none; }
+
+    .sheet {
+      width: min(720px, 100%);
+      margin: 0;
+      padding: 28px 8px 12px;
+      background: #fffdf8;
+      border-radius: 18px;
+    }
+
+    .sheet p {
+      margin: 0 0 8px;
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      line-height: 1.35;
+    }
+
+    .sheet button {
+      font: inherit;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1f4e46;
+      background: transparent;
+      border: 0;
+      padding: 12px 0;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -89,78 +136,93 @@
     <h1 id="question"></h1>
     <div class="choices" id="choices"></div>
   </main>
+  <canvas id="fx"></canvas>
+  <div class="popup" id="popup" hidden>
+    <div class="sheet">
+      <p id="explain"></p>
+      <button type="button" id="next">Next</button>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script>
     const letters = ["A.", "B.", "C.", "D."];
     const questions = [
       {
         q: "What does the school vision say LA wants to give future leaders?",
         choices: [
-          ["🎓", "Quality education, a school to look up to"],
-          ["⏱️", "A shorter school day for every class"],
-          ["🏅", "Sports training as the school's main goal"],
-          ["💻", "Online lessons in place of the classroom"]
+          ["🎓", "Quality education the community looks up to"],
+          ["🎓", "Quality teaching the families can rely on"],
+          ["🎓", "Strong results the community can measure"],
+          ["🎓", "Caring support the community can trust"]
         ],
-        answer: 0
+        answer: 0,
+        why: "The vision is quality education for future leaders, and a school the community can look up to."
       },
       {
         q: "The mission says Christian education helps students act with what?",
         choices: [
-          ["🏃", "Speed and silence in daily school life"],
-          ["🤝", "Integrity and honesty in how they act"],
-          ["📝", "Perfect test scores above everything"],
-          ["🏆", "Winning every contest above all else"]
+          ["🤝", "Kindness and patience"],
+          ["🤝", "Integrity and honesty"],
+          ["🤝", "Courage and respect"],
+          ["🤝", "Effort and humility"]
         ],
-        answer: 1
+        answer: 1,
+        why: "Christian education is how the school grows character, so students act with integrity and honesty."
       },
       {
         q: "Students should know Chinese culture, think internationally, and build what?",
         choices: [
-          ["📅", "One exam week as the yearly target"],
-          ["🥇", "Club medals as the main school aim"],
-          ["📚", "Abilities made for lifelong learning"],
-          ["🔒", "Staying inside only one school subject"]
+          ["📚", "Skills for further study"],
+          ["📚", "Habits for group projects"],
+          ["📚", "Abilities for lifelong learning"],
+          ["📚", "Strength for the next stage"]
         ],
-        answer: 2
+        answer: 2,
+        why: "Students should know Chinese culture, think internationally, and build abilities they can use for life."
       },
       {
         q: "What is the school motto?",
         choices: [
-          ["💡", "Knowledge is power for every student"],
+          ["💛", "Love hopes all things, endures all things"],
           ["💛", "Love bears all things, believes all things"],
-          ["🛠️", "Work comes first, and rest comes after"],
-          ["⚡", "Be the fastest person in the classroom"]
+          ["💛", "Love bears all things, hopes all things"],
+          ["💛", "Love believes all things, endures all things"]
         ],
-        answer: 1
+        answer: 1,
+        why: "The motto is “Love bears all things, believes all things.” In Chinese: 凡事包容，凡事相信。"
       },
       {
         q: "Where does the motto come from?",
         choices: [
-          ["📖", "Psalm 23"],
-          ["✝️", "John 3:16"],
-          ["🌍", "Genesis 1:1"],
-          ["✉️", "1 Corinthians 13:7"]
+          ["📖", "1 Corinthians 13:4"],
+          ["📖", "1 Corinthians 13:13"],
+          ["📖", "1 John 4:7"],
+          ["📖", "1 Corinthians 13:7"]
         ],
-        answer: 3
+        answer: 3,
+        why: "That line is from 1 Corinthians 13:7, 哥林多前書 13章7節."
       },
       {
         q: "What time are the morning worship, reading, and homeroom slots?",
         choices: [
-          ["🕗", "08:50–08:55 in the morning"],
-          ["🕖", "07:30–08:00 before first lesson"],
-          ["🕛", "12:00 noon, the middle of the day"],
-          ["🌇", "After school, once the lessons end"]
+          ["🕗", "08:50–08:55"],
+          ["🕗", "08:40–08:50"],
+          ["🕗", "08:55–09:05"],
+          ["🕗", "08:45–08:55"]
         ],
-        answer: 0
+        answer: 0,
+        why: "Worship, reading, and homeroom in the morning all sit in the 08:50–08:55 slot."
       },
       {
         q: "What is Monday at 08:50–08:55?",
         choices: [
           ["📚", "Drop Everything And Read"],
-          ["📋", "Homeroom tasks for the class"],
-          ["🙏", "Whole-school Worship together"],
-          ["🚩", "Flag-raising for the whole school"]
+          ["📝", "Chapel message reflection"],
+          ["🏫", "Whole-school Worship"],
+          ["🚩", "Flag-raising ceremony"]
         ],
-        answer: 2
+        answer: 2,
+        why: "Monday at 08:50–08:55 is whole-school worship."
       },
       {
         q: "Why are the seats arranged as islands?",
@@ -170,41 +232,58 @@
           ["👀", "To help the teacher watch every screen"],
           ["🚪", "To help the class leave the room faster"]
         ],
-        answer: 1
+        answer: 1,
+        why: "Island groups let students face one another and take part in group discussion."
       },
       {
-        q: "Students respect and support one another, learn together, take responsibility as future leaders, and keep learning for life. Which habit fits?",
+        q: "What are the class expectations?",
         choices: [
-          ["📱", "Check Google Calendar weekly and keep phones on the desk"],
-          ["🎮", "Skip Google Calendar and use phones for games in class"],
-          ["📅", "Check Google Calendar daily and lock phones away on arrival"],
-          ["📆", "Check Google Calendar on Friday and leave phones in bags"]
+          ["🗓️", "Weekly calendar, phones in bags"],
+          ["🔕", "Daily calendar, phones on silent"],
+          ["📅", "Daily calendar, phones in lockers"],
+          ["📆", "Weekly calendar, phones in lockers"]
         ],
-        answer: 2
+        answer: 2,
+        why: "Students check Google Calendar every day, and phones go into the lockers as soon as they arrive."
       },
       {
-        q: "Which set is in the homeroom essential agreements?",
+        q: "What are the homeroom essential agreements?",
         choices: [
-          ["🎮", "Speak fast, gaming is fine, ignore others, playfight, skip help"],
-          ["🏃", "Line up fast, stay silent, skip respect, race others, help no one"],
-          ["📱", "Phones stay out, game in class, talk over others, playfight, no help"],
-          ["🤝", "Think first, no gaming, respect others, no playfighting, offer help"]
+          ["🤝", "Think first, no phones, offer help"],
+          ["🤝", "Listen first, no gaming, offer help"],
+          ["🤝", "Think first, no gaming, take turns"],
+          ["🤝", "Think first, no gaming, offer help"]
         ],
-        answer: 3
+        answer: 3,
+        why: "Think before you speak, no gaming, and offer help. Respect and no playfighting sit with those."
       }
     ];
 
     const countEl = document.getElementById("count");
     const questionEl = document.getElementById("question");
     const choicesEl = document.getElementById("choices");
+    const popup = document.getElementById("popup");
+    const explainEl = document.getElementById("explain");
+    const nextBtn = document.getElementById("next");
     let index = 0;
     let attempts = 0;
     let showingScore = false;
     const solved = questions.map(() => false);
     const missed = questions.map(() => []);
 
+    function closeExplain() {
+      popup.hidden = true;
+    }
+
+    function openExplain() {
+      explainEl.textContent = questions[index].why;
+      popup.hidden = false;
+      nextBtn.focus();
+    }
+
     function showScore() {
       showingScore = true;
+      closeExplain();
       const accuracy = Math.round(questions.length / attempts * 100);
       countEl.textContent = questions.length + " / " + attempts;
       questionEl.className = "score";
@@ -244,15 +323,19 @@
         button.addEventListener("click", () => {
           if (solved[index] || missed[index].includes(choiceIndex)) return;
           attempts += 1;
-          if (choiceIndex === item.answer) solved[index] = true;
-          else missed[index].push(choiceIndex);
+          if (choiceIndex === item.answer) {
+            solved[index] = true;
+            burst(button);
+          } else missed[index].push(choiceIndex);
           showQuestion();
+          if (solved[index]) openExplain();
         });
         choicesEl.appendChild(button);
       });
     }
 
     function move(step) {
+      closeExplain();
       if (showingScore) {
         if (step < 0) {
           index = questions.length - 1;
@@ -279,6 +362,142 @@
         move(-1);
       }
     });
+
+    nextBtn.addEventListener("click", () => move(1));
+
+    function setupBurst(canvas) {
+      if (!window.THREE) return function () {};
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+        premultipliedAlpha: false
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x000000, 0);
+      canvas.style.opacity = "0";
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 40);
+      camera.position.z = 9;
+
+      const colors = [0x1f9d57, 0xe7c15a];
+      const groups = colors.map((color) => {
+        const mesh = new THREE.InstancedMesh(
+          new THREE.PlaneGeometry(0.16, 0.26),
+          new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }),
+          14
+        );
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+        const bits = [];
+        for (let i = 0; i < 14; i++) {
+          bits.push({
+            p: new THREE.Vector3(),
+            v: new THREE.Vector3(),
+            rot: Math.random() * 6,
+            spin: (Math.random() - 0.5) * 6
+          });
+        }
+        return { mesh: mesh, bits: bits };
+      });
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.28, 0.34, 64),
+        new THREE.MeshBasicMaterial({
+          color: 0x1f9d57,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          opacity: 0.55
+        })
+      );
+      ring.visible = false;
+      scene.add(ring);
+
+      const dummy = new THREE.Object3D();
+      const origin = new THREE.Vector3();
+      let raf = 0;
+      let start = 0;
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      function place(el) {
+        const rect = el.getBoundingClientRect();
+        const nx = ((rect.left + rect.width / 2) / window.innerWidth) * 2 - 1;
+        const ny = -(((rect.top + rect.height / 2) / window.innerHeight) * 2 - 1);
+        const viewH = 2 * Math.tan((camera.fov * Math.PI / 180) / 2) * camera.position.z;
+        const viewW = viewH * camera.aspect;
+        origin.set(nx * viewW / 2, ny * viewH / 2, 0);
+      }
+
+      function kick(el) {
+        place(el);
+        canvas.style.opacity = "1";
+        start = performance.now();
+        groups.forEach((group) => {
+          group.bits.forEach((bit) => {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1.1 + Math.random() * 1.8;
+            bit.p.copy(origin);
+            bit.v.set(Math.cos(angle) * speed, 0.6 + Math.random() * 1.6, 0);
+            bit.rot = Math.random() * 6;
+          });
+        });
+        ring.visible = true;
+        ring.position.copy(origin);
+        ring.scale.setScalar(0.35);
+        ring.material.opacity = 0.55;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(frame);
+      }
+
+      function frame(now) {
+        const t = (now - start) / 1000;
+        const dt = 1 / 60;
+        if (t > 0.9) {
+          ring.visible = false;
+          groups.forEach((group) => {
+            group.bits.forEach((bit, i) => {
+              dummy.position.copy(bit.p);
+              dummy.scale.setScalar(0);
+              dummy.updateMatrix();
+              group.mesh.setMatrixAt(i, dummy.matrix);
+            });
+            group.mesh.instanceMatrix.needsUpdate = true;
+          });
+          canvas.style.opacity = "0";
+          renderer.render(scene, camera);
+          return;
+        }
+        groups.forEach((group) => {
+          group.bits.forEach((bit, i) => {
+            bit.v.y -= 3.2 * dt;
+            bit.p.addScaledVector(bit.v, dt);
+            bit.rot += bit.spin * dt;
+            dummy.position.copy(bit.p);
+            dummy.rotation.set(0, 0, bit.rot);
+            const fade = Math.max(0, 1 - t / 0.85);
+            dummy.scale.set(fade * 0.7, fade * 0.7, 1);
+            dummy.updateMatrix();
+            group.mesh.setMatrixAt(i, dummy.matrix);
+          });
+          group.mesh.instanceMatrix.needsUpdate = true;
+        });
+        ring.scale.setScalar(0.4 + t * 2.2);
+        ring.material.opacity = Math.max(0, 0.5 - t * 0.55);
+        renderer.render(scene, camera);
+        raf = requestAnimationFrame(frame);
+      }
+
+      return kick;
+    }
+
+    const burst = setupBurst(document.getElementById("fx"));
 
     showQuestion();
   </script>
