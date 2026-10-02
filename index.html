@@ -381,39 +381,58 @@
       const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 40);
       camera.position.z = 9;
 
-      const colors = [0x1f9d57, 0xe7c15a];
+      const colors = [0x1f9d57, 0xe7c15a, 0xfff6d4];
       const groups = colors.map((color) => {
         const mesh = new THREE.InstancedMesh(
-          new THREE.PlaneGeometry(0.16, 0.26),
-          new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }),
-          14
+          new THREE.PlaneGeometry(0.22, 0.36),
+          new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }),
+          16
         );
         mesh.frustumCulled = false;
         scene.add(mesh);
         const bits = [];
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 16; i++) {
           bits.push({
             p: new THREE.Vector3(),
             v: new THREE.Vector3(),
             rot: Math.random() * 6,
-            spin: (Math.random() - 0.5) * 6
+            spin: (Math.random() - 0.5) * 8
           });
         }
         return { mesh: mesh, bits: bits };
       });
 
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(0.28, 0.34, 64),
-        new THREE.MeshBasicMaterial({
-          color: 0x1f9d57,
-          transparent: true,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-          opacity: 0.55
-        })
-      );
-      ring.visible = false;
-      scene.add(ring);
+      const glowCanvas = document.createElement("canvas");
+      glowCanvas.width = glowCanvas.height = 128;
+      const g = glowCanvas.getContext("2d");
+      const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grd.addColorStop(0, "rgba(255,244,196,0.95)");
+      grd.addColorStop(0.45, "rgba(255,210,90,0.35)");
+      grd.addColorStop(1, "rgba(255,210,90,0)");
+      g.fillStyle = grd;
+      g.fillRect(0, 0, 128, 128);
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(glowCanvas),
+        transparent: true,
+        depthWrite: false
+      }));
+      glow.visible = false;
+      scene.add(glow);
+
+      const rings = [0x1f9d57, 0xe7c15a].map((color) => {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.32, 0.38, 64),
+          new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          })
+        );
+        ring.visible = false;
+        scene.add(ring);
+        return ring;
+      });
 
       const dummy = new THREE.Object3D();
       const origin = new THREE.Vector3();
@@ -442,16 +461,22 @@
         groups.forEach((group) => {
           group.bits.forEach((bit) => {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 1.1 + Math.random() * 1.8;
+            const speed = 1.6 + Math.random() * 2.4;
             bit.p.copy(origin);
-            bit.v.set(Math.cos(angle) * speed, 0.6 + Math.random() * 1.6, 0);
+            bit.v.set(Math.cos(angle) * speed, 1.2 + Math.random() * 2.4, 0);
             bit.rot = Math.random() * 6;
           });
         });
-        ring.visible = true;
-        ring.position.copy(origin);
-        ring.scale.setScalar(0.35);
-        ring.material.opacity = 0.55;
+        glow.visible = true;
+        glow.position.copy(origin);
+        glow.material.opacity = 0.85;
+        glow.scale.setScalar(0.4);
+        rings.forEach((ring, i) => {
+          ring.visible = true;
+          ring.position.copy(origin);
+          ring.scale.setScalar(0.25 + i * 0.08);
+          ring.material.opacity = 0.7;
+        });
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(frame);
       }
@@ -459,8 +484,9 @@
       function frame(now) {
         const t = (now - start) / 1000;
         const dt = 1 / 60;
-        if (t > 0.9) {
-          ring.visible = false;
+        if (t > 1.25) {
+          glow.visible = false;
+          rings.forEach((ring) => { ring.visible = false; });
           groups.forEach((group) => {
             group.bits.forEach((bit, i) => {
               dummy.position.copy(bit.p);
@@ -476,20 +502,24 @@
         }
         groups.forEach((group) => {
           group.bits.forEach((bit, i) => {
-            bit.v.y -= 3.2 * dt;
+            bit.v.y -= 4.2 * dt;
             bit.p.addScaledVector(bit.v, dt);
             bit.rot += bit.spin * dt;
             dummy.position.copy(bit.p);
             dummy.rotation.set(0, 0, bit.rot);
-            const fade = Math.max(0, 1 - t / 0.85);
-            dummy.scale.set(fade * 0.7, fade * 0.7, 1);
+            const fade = Math.max(0, 1 - t / 1.15);
+            dummy.scale.set(fade, fade * (0.85 + (i % 3) * 0.12), 1);
             dummy.updateMatrix();
             group.mesh.setMatrixAt(i, dummy.matrix);
           });
           group.mesh.instanceMatrix.needsUpdate = true;
         });
-        ring.scale.setScalar(0.4 + t * 2.2);
-        ring.material.opacity = Math.max(0, 0.5 - t * 0.55);
+        glow.scale.setScalar(0.6 + t * 2.4);
+        glow.material.opacity = Math.max(0, 0.8 - t * 0.9);
+        rings.forEach((ring, i) => {
+          ring.scale.setScalar(0.35 + t * (2.6 + i * 0.7));
+          ring.material.opacity = Math.max(0, 0.65 - t * 0.55);
+        });
         renderer.render(scene, camera);
         raf = requestAnimationFrame(frame);
       }
